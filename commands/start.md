@@ -17,7 +17,31 @@ Parameters:
   - issueIdOrKey: "{ticket_id}"
 ```
 
-### 3. Jira 상태 변경 → In Progress
+### 3. 프로젝트 매핑 (중요!)
+
+**티켓의 프로젝트 키를 기반으로 로컬 프로젝트를 결정합니다.**
+
+1. 티켓에서 프로젝트 키 추출 (예: `FS-533` → `FS`)
+2. `~/.claude/workflow/config.json`의 `projects` 배열에서 해당 프로젝트 키를 `jiraProjects`에 포함하는 프로젝트 찾기
+3. 해당 프로젝트의 `localPath`를 작업 디렉토리로 사용
+
+```
+config.json 프로젝트 매핑 예시:
+{
+  "projects": [
+    { "name": "project-a", "localPath": "~/projects/project-a", "jiraProjects": ["BE", "FC"] },
+    { "name": "project-b", "localPath": "~/projects/project-b", "jiraProjects": ["FS"] }
+  ]
+}
+
+매핑 결과:
+- FS-533 → FS → project-b (~/projects/project-b)
+- BE-123 → BE → project-a (~/projects/project-a)
+```
+
+**매핑 실패 시:** 사용자에게 어느 프로젝트에서 작업할지 확인
+
+### 4. Jira 상태 변경 → In Progress
 ```
 Tool: mcp__atlassian__getTransitionsForJiraIssue
 → "In Progress" transition ID 찾기
@@ -28,8 +52,14 @@ Parameters:
   - transitionId: "{in_progress_id}"
 ```
 
-### 4. Git 브랜치 생성
+### 5. Git 브랜치 생성
+
+**반드시 3단계에서 매핑된 프로젝트의 `localPath`에서 실행합니다.**
+
 ```bash
+# 매핑된 프로젝트 디렉토리로 이동
+cd {mapped_project_localPath}
+
 # 현재 main/develop에서 분기
 git fetch origin
 git checkout -b feature/{ticket_id}-{short_description} origin/develop
@@ -40,7 +70,7 @@ git checkout -b feature/{ticket_id}-{short_description} origin/develop
 - `fix/PROJ-123-login-error` (버그 수정)
 - `hotfix/PROJ-123-critical-fix` (긴급 수정)
 
-### 5. 작업 요약 출력
+### 6. 작업 요약 출력
 
 ```
 ✅ 작업 시작 완료

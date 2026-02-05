@@ -24,6 +24,22 @@ description: 리뷰 요청. Slack 채널에 멘션으로 리뷰 요청 전송.
 
 ## 실행 단계
 
+### 0. 작업 디렉토리 확인 (선행 조건)
+
+**현재 디렉토리가 올바른 프로젝트인지 확인합니다.**
+
+```bash
+# 현재 브랜치에서 티켓 ID 추출
+git branch --show-current
+# 예: feature/FS-533-http-only-cookie → FS
+
+# config.json에서 해당 프로젝트 키의 localPath 확인
+# FS → project-b (~/projects/project-b)
+```
+
+`/dev-workflow:start`로 작업을 시작했다면 이미 올바른 디렉토리에 있습니다.
+독립적으로 실행 시 `~/.claude/workflow/config.json`의 `projects` 매핑을 참조하세요.
+
 ### 1. PR 정보 조회
 ```bash
 gh pr view --json url,title,number,body

@@ -13,7 +13,7 @@ description: 기술 문서 작성. Confluence에 Tech Spec 생성 후 Jira 티�
 | 항목 | 내용 |
 |------|------|
 | Jira | [PROJ-123](https://company.atlassian.net/browse/PROJ-123) |
-| 작성자 | @lonnie |
+| 작성자 | {currentUser.name} |
 | 작성일 | 2026-02-04 |
 | 상태 | Draft / In Review / Approved |
 

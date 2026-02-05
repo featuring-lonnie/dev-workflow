@@ -53,11 +53,11 @@ config.json의 projects 섹션에서 GitHub repo와 로컬 경로를 매핑:
 {
   "projects": [
     {
-      "name": "featuring-co",
-      "localPath": "/Users/lonnie/study/featuring-co",
+      "name": "project-a",
+      "localPath": "~/projects/project-a",
       "github": {
-        "org": "featuring-corp",
-        "repo": "featuring-co"
+        "org": "my-org",
+        "repo": "project-a"
       }
     }
   ]

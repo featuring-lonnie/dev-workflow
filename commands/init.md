@@ -205,24 +205,50 @@ cd {project_path} && git remote -v
 각 프로젝트별로:
 1. 로컬 경로 (localPath)
 2. Git remote URL에서 org/repo 추출
-3. 연관된 Jira 프로젝트 키
+3. **연관된 Jira 프로젝트 키** (AskUserQuestion으로 확인)
+
+**Jira 프로젝트 연결 (중요!):**
+```
+각 로컬 프로젝트에 대해 AskUserQuestion:
+"이 프로젝트에서 사용할 Jira 프로젝트를 선택해주세요"
+- 옵션: 2.3에서 조회한 Jira 프로젝트 목록 (BE, FS, FC 등)
+- 복수 선택 가능 (multiSelect: true)
+```
+
+**이 연결이 중요한 이유:**
+- `/dev-workflow:start FS-533` 실행 시
+- FS 프로젝트 키 → jiraProjects에 "FS"가 포함된 로컬 프로젝트 찾기
+- 해당 프로젝트의 localPath에서 Git 작업 수행
 
 **매핑 형식:**
 ```json
 {
   "projects": [
     {
-      "name": "featuring-co",
-      "localPath": "/Users/lonnie/study/featuring-co",
+      "name": "project-a",
+      "localPath": "~/projects/project-a",
       "github": {
-        "org": "featuring-corp",
-        "repo": "featuring-co"
+        "org": "my-org",
+        "repo": "project-a"
       },
       "jiraProjects": ["BE", "FC"]
+    },
+    {
+      "name": "project-b",
+      "localPath": "~/projects/project-b",
+      "github": {
+        "org": "my-org",
+        "repo": "project-b"
+      },
+      "jiraProjects": ["FS"]
     }
   ]
 }
 ```
+
+**매핑 예시:**
+- `FS-533` → FS → project-b (~/projects/project-b)
+- `BE-123` → BE → project-a (~/projects/project-a)
 
 ### 2.2 팀원 정보 수집
 
@@ -312,12 +338,12 @@ git symbolic-ref refs/remotes/origin/HEAD | sed 's@^refs/remotes/origin/@@'
   "updatedAt": "2026-02-04T18:30:00+09:00",
 
   "team": {
-    "name": "featuring",
-    "prefix": "fc"
+    "name": "{team_name}",
+    "prefix": "{team_prefix}"
   },
 
   "currentUser": {
-    "name": "lonnie",
+    "name": "{username}",
     "role": "developer"
   },
 
@@ -326,9 +352,9 @@ git symbolic-ref refs/remotes/origin/HEAD | sed 's@^refs/remotes/origin/@@'
       "enabled": true,
       "commands": ["start", "commit", "pr", "review", "pr-review", "approve", "done", "doc", "status"],
       "slack": {
-        "channelId": "C064UKQ0Y3E",
-        "channelName": "개발_백엔드",
-        "mentionGroup": "@백엔드"
+        "channelId": "{channel_id}",
+        "channelName": "{channel_name}",
+        "mentionGroup": "{mention_group}"
       },
       "jiraProjects": ["BE", "FC", "FS"],
       "git": {
@@ -349,7 +375,7 @@ git symbolic-ref refs/remotes/origin/HEAD | sed 's@^refs/remotes/origin/@@'
         "defaultReviewers": ["young", "moons"]
       },
       "confluence": {
-        "techSpecSpaceKey": "~712020495eea6ad074499fbac61176a5bb14e0",
+        "techSpecSpaceKey": "{space_key}",
         "techSpecParentPageId": null
       },
       "templates": {
@@ -379,39 +405,45 @@ git symbolic-ref refs/remotes/origin/HEAD | sed 's@^refs/remotes/origin/@@'
 
   "integrations": {
     "jira": {
-      "cloudId": "featuring-corp.atlassian.net",
+      "cloudId": "{your-domain}.atlassian.net",
       "projects": [
-        { "key": "BE", "name": "Backend Engineering", "id": "10004" },
-        { "key": "FS", "name": "Featuring Studio", "id": "10132" },
-        { "key": "FC", "name": "Featuring", "id": "10025" }
+        { "key": "BE", "name": "Backend Engineering", "id": "{project_id}" },
+        { "key": "FS", "name": "Frontend Studio", "id": "{project_id}" },
+        { "key": "FC", "name": "Feature Core", "id": "{project_id}" }
       ],
       "defaultProject": "BE"
     },
-    "slack": { "workspace": "featuring" },
+    "slack": { "workspace": "{workspace_name}" },
     "confluence": {
-      "cloudId": "featuring-corp.atlassian.net",
+      "cloudId": "{your-domain}.atlassian.net",
       "spaces": {
-        "backend": { "key": "Backend", "name": "Backend", "id": "287801378" },
-        "personal": { "key": "~712020495eea6ad074499fbac61176a5bb14e0", "name": "lonnie's personal space" }
+        "team": { "key": "{team_space_key}", "name": "{team_space_name}", "id": "{space_id}" },
+        "personal": { "key": "{personal_space_key}", "name": "{username}'s personal space" }
       }
     },
-    "github": { "org": "featuring-corp" }
+    "github": { "org": "{github_org}" }
   },
 
   "users": {
-    "lonnie": {
-      "jira": { "accountId": "712020:495eea6a-d074-499f-bac6-1176a5bb14e0", "displayName": "lonnie" },
-      "slack": { "userId": "U09KXQ58YSX", "displayName": "Lonnie" },
+    "{username}": {
+      "jira": { "accountId": "{jira_account_id}", "displayName": "{username}" },
+      "slack": { "userId": "{slack_user_id}", "displayName": "{username}" },
       "role": "developer"
     }
   },
 
   "projects": [
     {
-      "name": "featuring-co",
-      "localPath": "/Users/lonnie/study/featuring-co",
-      "github": { "org": "featuring-corp", "repo": "featuring-co" },
+      "name": "project-a",
+      "localPath": "~/projects/project-a",
+      "github": { "org": "my-org", "repo": "project-a" },
       "jiraProjects": ["BE", "FC"]
+    },
+    {
+      "name": "project-b",
+      "localPath": "~/projects/project-b",
+      "github": { "org": "my-org", "repo": "project-b" },
+      "jiraProjects": ["FS"]
     }
   ],
 
@@ -462,8 +494,8 @@ git symbolic-ref refs/remotes/origin/HEAD | sed 's@^refs/remotes/origin/@@'
 ```
 새 프로젝트 추가
 
-경로: /Users/lonnie/study/new-project
-GitHub: featuring-corp/new-project
+경로: ~/projects/new-project
+GitHub: my-org/new-project
 Jira: BE
 
 projects 배열에 추가되었습니다.
@@ -503,15 +535,13 @@ projects 배열에 추가되었습니다.
 
 설정 파일: ~/.claude/workflow/config.json
 
-사용자: lonnie
-역할: developer
-전문분야: backend (Backend Developer)
+사용자: {username}
+역할: {role}
+전문분야: {specialization}
 
 등록된 프로젝트:
-   - featuring-co (BE, FC)
-   - featuring-studio (FS)
-   - featuring-infrastructure (BE)
-   - featuring-mcp (BE)
+   - project-a (BE, FC)
+   - project-b (FS)
 
 이제 다음 명령어를 사용할 수 있습니다:
    /dev-workflow:start {TICKET}  - 작업 시작
