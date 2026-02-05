@@ -538,6 +538,33 @@ projects 배열에 추가되었습니다.
 
 ---
 
+## 예상치 못한 에러 처리
+
+위 에러 외의 예상치 못한 에러가 발생한 경우:
+
+1. **에러 분류 확인**: [공통 에러 핸들링 가이드](../shared/error-handling.md) 참조
+2. **인증 에러가 아닌 경우**: GitHub 이슈 등록 여부 확인
+
+```
+Tool: AskUserQuestion
+Question: "예상치 못한 에러가 발생했습니다. GitHub 이슈로 등록할까요?"
+Options:
+  - "이슈 등록" - dev-workflow 레포에 버그 리포트 생성
+  - "건너뛰기" - 이슈 등록하지 않고 진행
+  - "에러 상세 보기" - 에러 정보 확인 후 결정
+```
+
+**이슈 등록 시:**
+```bash
+gh issue create \
+  --repo featuring-lonnie/dev-workflow \
+  --title "[Bug] init: {에러 요약}" \
+  --body "{이슈 본문 - shared/error-handling.md 템플릿 참조}" \
+  --label "bug"
+```
+
+---
+
 ## 설정 후 다음 단계
 
 설정 완료 후 안내:
