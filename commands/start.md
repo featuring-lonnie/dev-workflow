@@ -67,6 +67,21 @@ Parameters:
   - transitionId: "{in_progress_id}"
 ```
 
+### 4-1. Jira 시작일 업데이트
+
+**작업 시작 시 티켓의 시작일(Start Date)을 오늘 날짜로 설정합니다.**
+
+```
+Tool: mcp__atlassian__editJiraIssue
+Parameters:
+  - cloudId: "{config.integrations.jira.cloudId}"
+  - issueIdOrKey: "{ticket_id}"
+  - fields: { "customfield_10015": "{today_date_YYYY-MM-DD}" }
+```
+
+> **Note:** 시작일 필드 ID는 Jira 설정에 따라 다를 수 있습니다.
+> `customfield_10015`가 작동하지 않으면 프로젝트 필드 메타데이터를 조회하여 확인하세요.
+
 ### 5. Git 브랜치 생성
 
 **반드시 3단계에서 매핑된 프로젝트의 `localPath`에서 실행합니다.**
@@ -93,6 +108,7 @@ git checkout -b feature/{ticket_id}-{short_description} origin/develop
 📋 Jira: PROJ-123
    제목: 회원가입 API 구현
    상태: In Progress ← 변경됨
+   시작일: 2026-02-05 ← 오늘 날짜로 설정됨
 
 🌿 브랜치: feature/PROJ-123-user-signup
    기반: origin/develop
