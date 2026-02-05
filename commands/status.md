@@ -63,9 +63,13 @@ git rev-list --count origin/develop..HEAD
 브랜치명에서 파싱: `feature/PROJ-123-...` → `PROJ-123`
 
 ### 3. Jira 상태 조회
+
+**Config에서 cloudId 로드**: `~/.claude/workflow/config.json` → `integrations.jira.cloudId`
+
 ```
 Tool: mcp__atlassian__getJiraIssue
 Parameters:
+  - cloudId: "{config.integrations.jira.cloudId}"
   - issueIdOrKey: "PROJ-123"
 ```
 
@@ -129,6 +133,7 @@ gh pr checks
 ```
 Tool: mcp__atlassian__searchJiraIssuesUsingJql
 Parameters:
+  - cloudId: "{config.integrations.jira.cloudId}"
   - jql: "assignee = currentUser() AND status = 'In Progress'"
 ```
 

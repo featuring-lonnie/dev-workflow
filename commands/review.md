@@ -46,8 +46,14 @@ gh pr view --json url,title,number,body
 ```
 
 ### 2. Jira 티켓 정보 조회
+
+**Config에서 cloudId 로드**: `~/.claude/workflow/config.json` → `integrations.jira.cloudId`
+
 ```
 Tool: mcp__atlassian__getJiraIssue
+Parameters:
+  - cloudId: "{config.integrations.jira.cloudId}"
+  - issueIdOrKey: "{ticket_id}"
 ```
 
 ### 3. Slack 메시지 전송
@@ -65,6 +71,10 @@ Parameters:
 ### 4. Jira 상태 업데이트 (선택)
 ```
 Tool: mcp__atlassian__transitionJiraIssue
+Parameters:
+  - cloudId: "{config.integrations.jira.cloudId}"
+  - issueIdOrKey: "{ticket_id}"
+  - transitionId: "{in_review_id}"
 - "In Review" 상태로 변경 (워크플로우에 있는 경우)
 ```
 

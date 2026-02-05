@@ -44,12 +44,19 @@ Merge 옵션:
 - `--delete-branch`: 브랜치 삭제
 
 ### 3. Jira 상태 변경 → Done
+
+**Config에서 cloudId 로드**: `~/.claude/workflow/config.json` → `integrations.jira.cloudId`
+
 ```
 Tool: mcp__atlassian__getTransitionsForJiraIssue
-→ "Done" transition ID 찾기
+Parameters:
+  - cloudId: "{config.integrations.jira.cloudId}"
+  - issueIdOrKey: "{ticket_id}"
+→ "Done" 또는 "완료" transition ID 찾기
 
 Tool: mcp__atlassian__transitionJiraIssue
 Parameters:
+  - cloudId: "{config.integrations.jira.cloudId}"
   - issueIdOrKey: "{ticket_id}"
   - transitionId: "{done_id}"
 ```

@@ -54,13 +54,25 @@ Parameters:
 
 ### 1.3 Atlassian MCP 확인 (Jira)
 
+**먼저 Cloud ID (UUID)를 조회합니다:**
 ```
-Tool: mcp__atlassian__atlassianUserInfo
+Tool: mcp__atlassian__getAccessibleAtlassianResources
 ```
+
+**반환 예시:**
+```json
+{
+  "id": "2c7ce89f-01b8-412e-ba83-cb9d65b57537",  ← 이 UUID를 저장
+  "url": "https://featuring-corp.atlassian.net",
+  "name": "featuring-corp"
+}
+```
+
+**중요:** `id` 필드의 UUID를 `config.integrations.jira.cloudId`와 `config.integrations.confluence.cloudId`에 저장합니다. URL이 아닌 UUID가 필요합니다.
 
 **체크 항목:**
 - [ ] Atlassian MCP 연결됨
-- [ ] 사용자 정보 조회 가능
+- [ ] Cloud ID (UUID) 조회 가능
 
 **실패 시 안내:**
 - Atlassian MCP 설정 확인
@@ -256,7 +268,7 @@ cd {project_path} && git remote -v
 ```
 Tool: mcp__atlassian__lookupJiraAccountId
 Parameters:
-  - cloudId: "featuring-corp.atlassian.net"
+  - cloudId: "{config.integrations.jira.cloudId}"  // UUID
   - query: "{팀원 이름}"
 ```
 
@@ -405,7 +417,7 @@ git symbolic-ref refs/remotes/origin/HEAD | sed 's@^refs/remotes/origin/@@'
 
   "integrations": {
     "jira": {
-      "cloudId": "{your-domain}.atlassian.net",
+      "cloudId": "{UUID from getAccessibleAtlassianResources}",  // 예: "2c7ce89f-01b8-412e-ba83-cb9d65b57537"
       "projects": [
         { "key": "BE", "name": "Backend Engineering", "id": "{project_id}" },
         { "key": "FS", "name": "Frontend Studio", "id": "{project_id}" },
@@ -415,7 +427,7 @@ git symbolic-ref refs/remotes/origin/HEAD | sed 's@^refs/remotes/origin/@@'
     },
     "slack": { "workspace": "{workspace_name}" },
     "confluence": {
-      "cloudId": "{your-domain}.atlassian.net",
+      "cloudId": "{UUID from getAccessibleAtlassianResources}",  // Jira와 동일한 UUID 사용
       "spaces": {
         "team": { "key": "{team_space_key}", "name": "{team_space_name}", "id": "{space_id}" },
         "personal": { "key": "{personal_space_key}", "name": "{username}'s personal space" }

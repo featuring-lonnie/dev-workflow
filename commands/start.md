@@ -10,10 +10,21 @@ description: 개발 작업 시작. Jira 티켓 상태를 In Progress로 변경�
 - 입력: `PROJ-123` 또는 Jira URL
 - URL에서 티켓 ID 추출
 
-### 2. Jira 티켓 조회
+### 2. Config에서 설정 로드
+
+**먼저 `~/.claude/workflow/config.json`에서 필요한 설정을 읽습니다.**
+
+```json
+// 필요한 값들:
+// - integrations.jira.cloudId (UUID 형식, 예: "2c7ce89f-01b8-412e-ba83-cb9d65b57537")
+// - projects 배열 (Jira 프로젝트 → 로컬 경로 매핑)
+```
+
+### 3. Jira 티켓 조회
 ```
 Tool: mcp__atlassian__getJiraIssue
 Parameters:
+  - cloudId: "{config.integrations.jira.cloudId}"  ← Config에서 읽은 UUID
   - issueIdOrKey: "{ticket_id}"
 ```
 
@@ -44,10 +55,14 @@ config.json 프로젝트 매핑 예시:
 ### 4. Jira 상태 변경 → In Progress
 ```
 Tool: mcp__atlassian__getTransitionsForJiraIssue
-→ "In Progress" transition ID 찾기
+Parameters:
+  - cloudId: "{config.integrations.jira.cloudId}"
+  - issueIdOrKey: "{ticket_id}"
+→ "In Progress" 또는 "진행 중" transition ID 찾기
 
 Tool: mcp__atlassian__transitionJiraIssue
 Parameters:
+  - cloudId: "{config.integrations.jira.cloudId}"
   - issueIdOrKey: "{ticket_id}"
   - transitionId: "{in_progress_id}"
 ```

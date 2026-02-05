@@ -88,9 +88,13 @@ git checkout {headRefName}
 ### 5. 비즈니스 컨텍스트 파악
 
 **Jira 티켓에서 요구사항 확인:**
+
+**Config에서 cloudId 로드**: `~/.claude/workflow/config.json` → `integrations.jira.cloudId`
+
 ```
 Tool: mcp__atlassian__getJiraIssue
 Parameters:
+  - cloudId: "{config.integrations.jira.cloudId}"
   - issueIdOrKey: "{ticket_id}"
 ```
 
@@ -104,6 +108,7 @@ Parameters:
 ```
 Tool: mcp__atlassian__searchConfluenceUsingCql
 Parameters:
+  - cloudId: "{config.integrations.confluence.cloudId}"
   - cql: "text ~ '{ticket_id}' and type = page"
 ```
 

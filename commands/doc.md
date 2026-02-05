@@ -67,10 +67,17 @@ User -> API -> Service -> DB
 
 ## 실행 단계
 
+### 0. Config 로드
+**먼저 `~/.claude/workflow/config.json`에서 필요한 설정을 읽습니다:**
+- `integrations.jira.cloudId` (UUID)
+- `integrations.confluence.cloudId` (UUID)
+- `roles.developer.confluence.techSpecSpaceKey`
+
 ### 1. Jira 티켓 정보 조회
 ```
 Tool: mcp__atlassian__getJiraIssue
 Parameters:
+  - cloudId: "{config.integrations.jira.cloudId}"
   - issueIdOrKey: "PROJ-123"
 ```
 
@@ -78,6 +85,7 @@ Parameters:
 ```
 Tool: mcp__atlassian__createConfluencePage
 Parameters:
+  - cloudId: "{config.integrations.confluence.cloudId}"
   - spaceKey: {roles.developer.confluence.techSpecSpaceKey}
   - title: "[{ticket_id}] {기능명} Tech Spec"
   - parentPageId: {roles.developer.confluence.techSpecParentPageId}
@@ -90,6 +98,7 @@ Parameters:
 ```
 Tool: mcp__atlassian__editJiraIssue
 Parameters:
+  - cloudId: "{config.integrations.jira.cloudId}"
   - issueIdOrKey: "PROJ-123"
   - description: "{기존 description}\n\n---\n\n## 관련 문서\n\n* [Tech Spec]({confluence_page_url})"
 ```
