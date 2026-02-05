@@ -81,7 +81,67 @@ Parameters:
   - issueIdOrKey: "PROJ-123"
 ```
 
-### 2. Confluence 페이지 생성
+### 2. Plan 모드 진입 - Tech Spec 내용 논의
+
+**CRITICAL: 바로 문서를 생성하지 않고, Plan 모드로 진입하여 사용자와 내용을 논의합니다.**
+
+```
+Tool: EnterPlanMode
+```
+
+#### 2-1. SDD (Spec-Driven Development) 옵션 확인
+
+**사용자에게 spec-kit 사용 여부를 먼저 확인합니다:**
+
+```
+Tool: AskUserQuestion
+Question: "spec-kit을 사용하여 SDD 방식으로 진행할까요?"
+Options:
+  - "SDD 적용 (권장)" - spec-kit으로 specification 먼저 작성 후 Tech Spec 생성
+  - "일반 방식" - 바로 Tech Spec 내용 논의
+```
+
+**SDD 적용 시 워크플로우:**
+
+1. `/speckit.constitution` - 프로젝트 기본 원칙 확인/생성 (최초 1회)
+2. `/speckit.specify` - 기능 명세 작성
+3. `/speckit.plan` - 기술 계획 작성
+4. 위 내용을 기반으로 Tech Spec 문서 생성
+
+**SDD 장점:**
+- 구조화된 specification으로 명확한 요구사항 정의
+- 일관된 아키텍처 원칙 적용
+- 구현 전 충분한 설계 검토
+
+#### 2-2. Tech Spec 내용 논의
+
+Plan 모드에서 다음 사항을 사용자와 논의:
+
+1. **기술적 설계 범위**
+   - 어떤 API/시스템이 변경되는가?
+   - 아키텍처 다이어그램이 필요한가?
+   - 데이터 모델 변경이 있는가?
+
+2. **구현 계획**
+   - Phase별 작업 분류
+   - 우선순위 및 의존성
+
+3. **테스트 계획**
+   - 단위/통합/E2E 테스트 범위
+   - 테스트 시나리오
+
+4. **롤백 계획**
+   - 롤백 조건
+   - 롤백 방법
+
+**AskUserQuestion 도구를 사용하여 각 섹션별로 사용자 의견을 수집합니다.**
+
+논의가 완료되면 Plan 파일에 최종 Tech Spec 내용을 작성하고 `ExitPlanMode`로 사용자 승인을 요청합니다.
+
+### 3. 승인 후 Confluence 페이지 생성
+
+**사용자가 Plan을 승인한 후에만 실행합니다.**
+
 ```
 Tool: mcp__atlassian__createConfluencePage
 Parameters:
@@ -89,12 +149,12 @@ Parameters:
   - spaceKey: {roles.developer.confluence.techSpecSpaceKey}
   - title: "[{ticket_id}] {기능명} Tech Spec"
   - parentPageId: {roles.developer.confluence.techSpecParentPageId}
-  - body: "{rendered_template}"
+  - body: "{plan_mode에서_확정된_내용}"
 ```
 
 **설정 참조**: `~/.claude/workflow/config.json` → `roles.developer.confluence.*`
 
-### 3. Jira 티켓 본문에 문서 링크 추가
+### 4. Jira 티켓 본문에 문서 링크 추가
 ```
 Tool: mcp__atlassian__editJiraIssue
 Parameters:
@@ -113,7 +173,7 @@ Parameters:
 - 이미 "관련 문서" 섹션이 있으면 해당 섹션에 추가
 - 마크다운 링크 형식 사용: `[링크 텍스트](URL)`
 
-### 4. 완료 요약
+### 5. 완료 요약
 
 ```
 Tech Spec 생성 완료
@@ -146,7 +206,10 @@ DB 마이그레이션 템플릿 (스키마 변경, 롤백 계획 강조)
 
 ```
 /dev-workflow:doc PROJ-123
-# 기본 Tech Spec 생성
+# 기본 Tech Spec 생성 (Plan 모드로 논의 후 승인 시 생성)
+
+/dev-workflow:doc PROJ-123 --sdd
+# SDD 방식으로 진행 (spec-kit 사용)
 
 /dev-workflow:doc PROJ-123 --template api
 # API 템플릿으로 생성
@@ -154,6 +217,28 @@ DB 마이그레이션 템플릿 (스키마 변경, 롤백 계획 강조)
 /dev-workflow:doc PROJ-123 --space BACKEND
 # 특정 스페이스에 생성
 ```
+
+## SDD (Spec-Driven Development) 워크플로우
+
+spec-kit이 설치된 경우, SDD 방식으로 Tech Spec을 작성할 수 있습니다.
+
+### SDD 진행 순서
+
+```
+1. /speckit.constitution  → 프로젝트 기본 원칙 (최초 1회)
+2. /speckit.specify       → 기능 명세 작성
+3. /speckit.plan          → 기술 계획 작성
+4. /dev-workflow:doc      → Tech Spec 문서 생성 (위 내용 기반)
+```
+
+### SDD vs 일반 방식
+
+| 구분 | SDD 방식 | 일반 방식 |
+|------|----------|----------|
+| 적합한 경우 | 대규모 기능, 신규 프로젝트 | 소규모 변경, 단순 기능 |
+| 소요 시간 | 길지만 철저함 | 빠르지만 간략함 |
+| 산출물 | Constitution + Spec + Plan + Tech Spec | Tech Spec |
+| 일관성 | 높음 (원칙 기반) | 보통 |
 
 ## Confluence 스페이스
 
