@@ -236,26 +236,65 @@ Options:
 
 **사용자가 Plan을 승인한 후에만 실행합니다.**
 
+#### 3-0. Atlassian 인증 확인
+
+**CRITICAL: API 호출 전에 인증 상태를 먼저 확인합니다.**
+
+```
+Tool: mcp__atlassian__atlassianUserInfo
+```
+
+인증 오류(401) 발생 시:
+- 사용자에게 `/mcp` 명령어로 Atlassian 재인증 요청
+- 재인증 완료 후 다음 단계 진행
+
+#### 3-1. spaceId 조회
+
+**CRITICAL: createConfluencePage API는 spaceKey가 아닌 spaceId를 요구합니다.**
+
+config.json의 `techSpecSpaceKey`로 실제 `spaceId`를 조회합니다:
+
+```
+Tool: mcp__atlassian__getConfluenceSpaces
+Parameters:
+  - cloudId: "{config.integrations.confluence.cloudId}"
+  - keys: "{roles.developer.confluence.techSpecSpaceKey}"
+```
+
+응답에서 `results[0].id`가 spaceId입니다.
+
+#### 3-2. Confluence 페이지 생성
+
 ```
 Tool: mcp__atlassian__createConfluencePage
 Parameters:
   - cloudId: "{config.integrations.confluence.cloudId}"
-  - spaceKey: {roles.developer.confluence.techSpecSpaceKey}
+  - spaceId: "{조회한 spaceId}"  # ⚠️ spaceKey가 아님!
   - title: "[{ticket_id}] {기능명} Tech Spec"
-  - parentPageId: {roles.developer.confluence.techSpecParentPageId}
+  - contentFormat: "markdown"  # 마크다운 형식 사용
   - body: "{plan_mode에서_확정된_내용}"
 ```
 
 **설정 참조**: `~/.claude/workflow/config.json` → `roles.developer.confluence.*`
 
 ### 4. Jira 티켓 본문에 문서 링크 추가
+
+**CRITICAL: description 필드는 마크다운 문자열로 전달합니다 (ADF 형식 사용 X).**
+
 ```
 Tool: mcp__atlassian__editJiraIssue
 Parameters:
   - cloudId: "{config.integrations.jira.cloudId}"
   - issueIdOrKey: "PROJ-123"
-  - description: "{기존 description}\n\n---\n\n## 관련 문서\n\n* [Tech Spec]({confluence_page_url})"
+  - fields: {
+      "description": "{기존 description 마크다운}\n\n---\n\n## 📄 관련 문서\n\n* [Tech Spec]({confluence_page_url})\n\n---\n\n🤖 Updated with Claude Code"
+    }
 ```
+
+**주의사항:**
+- `fields.description`에 마크다운 문자열 직접 전달
+- ADF(Atlassian Document Format) JSON 형식은 오류 발생 가능
+- 기존 description 내용 보존 필수
 
 **구현 방법:**
 1. `mcp__atlassian__getJiraIssue`로 기존 description 조회
