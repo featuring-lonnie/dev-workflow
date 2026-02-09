@@ -57,16 +57,21 @@ Parameters:
 ```
 
 ### 3. Slack 메시지 전송
+
+**중요:** `mentionGroup`에 `<!subteam^...>` 구문이 포함되어 있으므로 `content_type: text/plain`을 사용해야 Slack에서 멘션이 정상 동작합니다.
+
 ```
 Tool: mcp__slack__conversations_add_message
 Parameters:
   - channel_id: {roles.developer.slack.channelId}
-  - text: "{roles.developer.slack.mentionGroup} 리뷰 부탁드립니다 🙏\n\n📋 Jira: ..."
+  - content_type: text/plain
+  - payload: "{roles.developer.slack.mentionGroup} 리뷰 부탁드립니다 🙏\n\n📋 Jira: ..."
 ```
 
 **설정 참조**: `~/.claude/workflow/config.json`
 - `roles.developer.slack.channelId` - 리뷰 요청 채널
-- `roles.developer.slack.mentionGroup` - 멘션 그룹 (@백엔드 등)
+- `roles.developer.slack.mentionGroup` - 멘션 그룹 (예: `<!subteam^S06FKUW4J92>`)
+- `roles.developer.slack.mentionGroupDisplay` - 표시용 이름 (예: `@be`)
 
 ### 4. Jira 상태 업데이트 (선택)
 ```
@@ -88,7 +93,8 @@ config.json에서 설정:
       "slack": {
         "channelId": "...",
         "channelName": "...",
-        "mentionGroup": "@백엔드"
+        "mentionGroup": "<!subteam^S06FKUW4J92>",
+        "mentionGroupDisplay": "@be"
       }
     }
   }

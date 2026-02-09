@@ -379,8 +379,9 @@ Written with Claude Code
 ```
 Tool: mcp__slack__conversations_add_message
 Parameters:
-  - channelId: {roles.developer.slack.channelId}
-  - text: "리뷰 완료했습니다\n{리뷰 요약}\n\n{attribution.text}"
+  - channel_id: {roles.developer.slack.channelId}
+  - content_type: text/plain
+  - payload: "리뷰 완료했습니다\n{리뷰 요약}\n\n{attribution.text}"
   - thread_ts: "{original_message_ts}"  # 스레드 답글
 ```
 

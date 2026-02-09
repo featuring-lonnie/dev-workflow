@@ -74,9 +74,10 @@ gh pr review --approve --body "LGTM 👍
 ```
 Tool: mcp__slack__conversations_add_message
 Parameters:
-  - channelId: {roles.developer.slack.channelId}
+  - channel_id: {roles.developer.slack.channelId}
+  - content_type: text/plain
+  - payload: "✅ 승인했습니다!"
   - thread_ts: {original_message_ts}
-  - text: "✅ 승인했습니다!"
 ```
 
 **설정 참조**: `~/.claude/workflow/config.json` → `roles.developer.slack.channelId`

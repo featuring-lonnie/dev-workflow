@@ -291,6 +291,8 @@ Tool: mcp__atlassian__getVisibleJiraProjects
 
 ### 2.4 Slack 설정
 
+#### Step 1: 채널 선택
+
 ```
 Tool: mcp__slack__channels_list
 - 채널 목록 조회
@@ -299,6 +301,79 @@ Tool: mcp__slack__channels_list
 **AskUserQuestion 사용:**
 - 질문: "리뷰 요청에 사용할 Slack 채널을 선택해주세요"
 - 옵션: 채널 목록
+
+#### Step 2: 멘션 그룹 자동 탐색
+
+Slack MCP에는 `usergroups.list` API가 없으므로, Slack MCP 프로세스의 환경변수에서 토큰을 추출하여 직접 호출합니다.
+
+**토큰 추출 및 유저그룹 조회:**
+```python
+# 1. Slack MCP 프로세스에서 토큰 추출
+import subprocess, json, urllib.request, urllib.parse
+
+result = subprocess.run(['ps', 'eww', '-x'], capture_output=True, text=True)
+xoxc, xoxd = '', ''
+for line in result.stdout.split('\n'):
+    if 'slack-mcp-server' in line:
+        for part in line.split():
+            if part.startswith('SLACK_MCP_XOXC_TOKEN='):
+                xoxc = part.split('=', 1)[1]
+            elif part.startswith('SLACK_MCP_XOXD_TOKEN='):
+                xoxd = part.split('=', 1)[1]
+        if xoxc: break
+
+# 2. usergroups.list API 호출 (include_users=true)
+url = 'https://slack.com/api/usergroups.list'
+data = urllib.parse.urlencode({'include_users': 'true'}).encode()
+req = urllib.request.Request(url, data=data, headers={
+    'Authorization': f'Bearer {xoxc}',
+    'Cookie': f'd={xoxd}',
+    'Content-Type': 'application/x-www-form-urlencoded'
+})
+resp = urllib.request.urlopen(req)
+body = json.loads(resp.read())
+
+# 3. 현재 유저가 포함된 그룹만 필터링
+my_id = '{current_user_slack_id}'  # config.users에서 가져온 Slack user ID
+my_groups = [
+    ug for ug in body.get('usergroups', [])
+    if my_id in ug.get('users', [])
+]
+```
+
+**결과 출력:**
+```
+내가 속한 Slack 유저그룹:
+
+| ID | Handle | Name | Members |
+|----|--------|------|---------|
+| S06FKUW4J92 | @be | 백엔드 파트 | 4 |
+| S09FRB57KU4 | @cdo | CDO 스쿼드 | 7 |
+```
+
+**AskUserQuestion 사용:**
+- 질문: "리뷰 요청 시 멘션할 그룹을 선택해주세요"
+- 옵션: 탐색된 유저그룹 목록 (handle + name 표시)
+
+**Config 저장 형식:**
+- `mentionGroup`: `"<!subteam^{GROUP_ID}>"` (Slack API 멘션 구문)
+- `mentionGroupDisplay`: `"@{handle}"` (사람이 읽을 수 있는 표시용)
+
+```json
+{
+  "slack": {
+    "channelId": "C064UKQ0Y3E",
+    "channelName": "개발_백엔드",
+    "mentionGroup": "<!subteam^S06FKUW4J92>",
+    "mentionGroupDisplay": "@be"
+  }
+}
+```
+
+**토큰 추출 실패 시:**
+- Slack MCP 프로세스를 찾을 수 없거나 토큰이 없는 경우
+- AskUserQuestion으로 수동 입력 안내: "Slack 유저그룹 ID를 직접 입력해주세요 (예: S06FKUW4J92)"
+- 또는 채널 히스토리에서 `subteam` 패턴을 검색하여 추출
 
 ### 2.5 Confluence 설정
 
@@ -366,7 +441,8 @@ git symbolic-ref refs/remotes/origin/HEAD | sed 's@^refs/remotes/origin/@@'
       "slack": {
         "channelId": "{channel_id}",
         "channelName": "{channel_name}",
-        "mentionGroup": "{mention_group}"
+        "mentionGroup": "<!subteam^{GROUP_ID}>",
+        "mentionGroupDisplay": "@{group_handle}"
       },
       "jiraProjects": ["BE", "FC", "FS"],
       "git": {
@@ -398,7 +474,7 @@ git symbolic-ref refs/remotes/origin/HEAD | sed 's@^refs/remotes/origin/@@'
     "pm": {
       "enabled": true,
       "commands": ["start", "ticket", "track", "prd", "release", "update", "done", "status"],
-      "slack": { "channelId": "", "channelName": "", "mentionGroup": "@PM" },
+      "slack": { "channelId": "", "channelName": "", "mentionGroup": "<!subteam^{GROUP_ID}>", "mentionGroupDisplay": "@PM" },
       "jiraProjects": ["FC", "FS", "BE"],
       "confluence": { "prdSpaceKey": "", "releaseNotesSpaceKey": "", "meetingNotesSpaceKey": "" },
       "templates": { "doc": "prd", "releaseNotes": "release-notes", "meeting": "meeting-notes" }
@@ -407,7 +483,7 @@ git symbolic-ref refs/remotes/origin/HEAD | sed 's@^refs/remotes/origin/@@'
     "designer": {
       "enabled": true,
       "commands": ["start", "upload", "spec", "review", "handoff", "done", "status"],
-      "slack": { "channelId": "", "channelName": "", "mentionGroup": "@디자인", "handoffChannelId": "" },
+      "slack": { "channelId": "", "channelName": "", "mentionGroup": "<!subteam^{GROUP_ID}>", "mentionGroupDisplay": "@디자인", "handoffChannelId": "" },
       "jiraProjects": ["DE", "FC"],
       "figma": { "teamId": "", "fileNamingConvention": "[{ticket_id}] {feature_name}" },
       "confluence": { "designSpecSpaceKey": "" },
