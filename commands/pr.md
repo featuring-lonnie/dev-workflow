@@ -10,23 +10,15 @@ description: PR 생성. Jira 티켓 연동, deploy 라벨 추가.
 ## Summary
 <!-- 작업 내용 1-3줄 요약 -->
 
-## Jira Ticket
-- [PROJ-123](https://company.atlassian.net/browse/PROJ-123)
+## References
+- Jira: [PROJ-123](https://company.atlassian.net/browse/PROJ-123)
+- Doc: [Tech Spec](https://company.atlassian.net/wiki/spaces/.../pages/...)
+<!-- Jira 티켓이나 문서가 없으면 해당 항목 생략 -->
 
 ## Changes
 - 변경사항 1
 - 변경사항 2
 - 변경사항 3
-
-## Test Plan
-- [ ] 단위 테스트 통과
-- [ ] 통합 테스트 통과
-- [ ] 로컬 테스트 완료
-
-## Checklist
-- [ ] 코드 리뷰 준비 완료
-- [ ] 문서 업데이트 (필요시)
-- [ ] Breaking change 없음
 ```
 
 ## 실행 단계
@@ -66,7 +58,24 @@ git log origin/develop..HEAD --oneline
 git push -u origin $(git branch --show-current)
 ```
 
-### 5. PR 생성
+### 5. References 조회
+
+**Jira 티켓 링크 구성:**
+- 브랜치명에서 추출한 티켓 ID로 Jira URL 생성
+- `https://{org}.atlassian.net/browse/{ticket_id}`
+- 티켓이 없는 브랜치면 생략
+
+**Confluence 문서 링크 조회:**
+- Jira 티켓의 remote links에서 Confluence 문서 탐색
+```
+Tool: mcp__atlassian__getJiraIssueRemoteIssueLinks
+Parameters:
+  - cloudId: "{config.integrations.jira.cloudId}"
+  - issueIdOrKey: "{ticket_id}"
+```
+- Confluence 링크가 있으면 포함, 없으면 생략
+
+### 6. PR 생성
 ```bash
 gh pr create \
   --base develop \
@@ -75,30 +84,21 @@ gh pr create \
 ## Summary
 회원가입 API 엔드포인트 추가
 
-## Jira Ticket
-- [PROJ-123](https://company.atlassian.net/browse/PROJ-123)
+## References
+- Jira: [PROJ-123](https://company.atlassian.net/browse/PROJ-123)
+- Doc: [Tech Spec](https://company.atlassian.net/wiki/spaces/.../pages/...)
 
 ## Changes
 - POST /api/v1/users/signup 엔드포인트 추가
 - UserService.signup() 메서드 구현
 - 입력값 검증 로직 추가
 
-## Test Plan
-- [ ] 단위 테스트 통과
-- [ ] 통합 테스트 통과
-- [ ] 로컬 테스트 완료
-
-## Checklist
-- [ ] 코드 리뷰 준비 완료
-- [ ] Breaking change 없음
-
----
-🤖 Written with Claude Code
+Written with Claude Code
 EOF
 )"
 ```
 
-### 6. 라벨 추가
+### 7. 라벨 추가
 ```bash
 # 기본 라벨 (roles.developer.pr.defaultLabels)
 gh pr edit --add-label "{roles.developer.pr.defaultLabels}"
@@ -183,7 +183,7 @@ gh issue create \
 PR 본문 마지막에 다음 attribution을 추가합니다:
 
 ```
-🤖 Written with Claude Code
+Written with Claude Code
 ```
 
 config.json의 `attribution.enabled`가 `false`인 경우 생략합니다.

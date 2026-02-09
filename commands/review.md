@@ -7,19 +7,14 @@ description: 리뷰 요청. Slack 채널에 멘션으로 리뷰 요청 전송.
 ## Slack 메시지 형식
 
 ```
-@백엔드 리뷰 부탁드립니다 🙏
+{mentionGroup} 리뷰 부탁드립니다
+{PR URL}
+```
 
-📋 Jira: [PROJ-123] 회원가입 API 구현
-🔗 PR: https://github.com/org/repo/pull/123
-
-**변경 요약:**
-- POST /api/v1/users/signup 엔드포인트 추가
-- 입력값 검증 로직 구현
-
-**리뷰 포인트:**
-- 에러 핸들링 방식 확인 부탁드립니다
-
-🤖 Written with Claude Code
+**예시:**
+```
+<!subteam^S06FKUW4J92> 리뷰 부탁드립니다
+https://github.com/org/repo/pull/123
 ```
 
 ## 실행 단계
@@ -65,7 +60,7 @@ Tool: mcp__slack__conversations_add_message
 Parameters:
   - channel_id: {roles.developer.slack.channelId}
   - content_type: text/plain
-  - payload: "{roles.developer.slack.mentionGroup} 리뷰 부탁드립니다 🙏\n\n📋 Jira: ..."
+  - payload: "{roles.developer.slack.mentionGroup} 리뷰 부탁드립니다\n{PR URL}"
 ```
 
 **설정 참조**: `~/.claude/workflow/config.json`
@@ -105,16 +100,14 @@ config.json에서 설정:
 
 ### --urgent (긴급)
 ```
-🚨 @백엔드 **긴급** 리뷰 부탁드립니다!
-
-...
+{mentionGroup} 긴급 리뷰 부탁드립니다
+{PR URL}
 ```
 
 ### --reviewer (특정 리뷰어)
 ```
-@young @kim 리뷰 부탁드립니다 🙏
-
-...
+<@USER_ID1> <@USER_ID2> 리뷰 부탁드립니다
+{PR URL}
 ```
 
 ## 사용 예시
@@ -133,14 +126,13 @@ config.json에서 설정:
 ## 리뷰 요청 후 상태
 
 ```
-✅ 리뷰 요청 완료
+리뷰 요청 완료
 
-📢 Slack: #개발_백엔드에 메시지 전송됨
-🔗 PR: https://github.com/org/repo/pull/123
-📋 Jira: PROJ-123 (In Review)
+Slack: #개발_백엔드에 메시지 전송됨
+PR: https://github.com/org/repo/pull/123
+Jira: PROJ-123 (In Review)
 
-⏳ 리뷰 대기 중...
-   /dev-workflow:status 로 상태 확인 가능
+리뷰 대기 중... /dev-workflow:status 로 상태 확인 가능
 ```
 
 ---
@@ -174,10 +166,5 @@ gh issue create \
 
 ## Attribution
 
-Slack 메시지 마지막에 다음 attribution을 추가합니다:
-
-```
-🤖 Written with Claude Code
-```
-
-config.json의 `attribution.enabled`가 `false`인 경우 생략합니다.
+Slack 메시지에는 attribution을 추가하지 않습니다. (메시지 간결성 유지)
+PR 본문에만 attribution을 포함합니다.
