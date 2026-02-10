@@ -93,7 +93,7 @@ gh pr create \
 - UserService.signup() 메서드 구현
 - 입력값 검증 로직 추가
 
-Written with Claude Code
+{config.attribution.text}
 EOF
 )"
 ```
@@ -180,10 +180,14 @@ gh issue create \
 
 ## Attribution
 
-PR 본문 마지막에 다음 attribution을 추가합니다:
+PR 본문 마지막에 config의 attribution을 추가합니다:
+
+- `~/.claude/workflow/config.json`의 `attribution.text` 값을 사용합니다 (하드코딩 금지)
+- `attribution.enabled`가 `false`인 경우 생략합니다
 
 ```
-Written with Claude Code
+# config.json 예시
+"attribution": {
+  "text": "🤖 Written with Claude Code"
+}
 ```
-
-config.json의 `attribution.enabled`가 `false`인 경우 생략합니다.

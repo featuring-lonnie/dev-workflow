@@ -537,7 +537,7 @@ git symbolic-ref refs/remotes/origin/HEAD | sed 's@^refs/remotes/origin/@@'
 
   "attribution": {
     "enabled": true,
-    "text": "Written with Claude Code",
+    "text": "🤖 Written with Claude Code",
     "coAuthor": "Co-Authored-By: Claude Code <noreply@anthropic.com>"
   }
 }
@@ -593,15 +593,17 @@ projects 배열에 추가되었습니다.
 
 ## Attribution 설정
 
-모든 생성/수정 작업에 attribution을 추가합니다:
+모든 생성/수정 작업에 `config.attribution.text` 값을 사용하여 attribution을 추가합니다:
 
 | 대상 | Attribution 형식 |
 |------|-----------------|
-| PR 본문 | `Written with Claude Code` |
-| 리뷰 코멘트 | `Written with Claude Code` |
-| Slack 메시지 | `Written with Claude Code` |
-| Confluence 문서 | `Written with Claude Code` |
-| Git 커밋 | `Co-Authored-By: Claude Code <noreply@anthropic.com>` |
+| PR 본문 | `{config.attribution.text}` |
+| 리뷰 코멘트 | `{config.attribution.text}` |
+| Slack 메시지 | `{config.attribution.text}` |
+| Confluence 문서 | `{config.attribution.text}` |
+| Git 커밋 | `{config.attribution.coAuthor}` |
+
+**중요:** 하드코딩하지 않고 반드시 config.json의 값을 참조합니다.
 
 **비활성화:**
 ```json

@@ -1,5 +1,5 @@
 ---
-description: 기술 문서 작성. Confluence에 Tech Spec 생성 후 Jira 티켓 본문에 연동.
+description: 기술 문서 작성. 병렬 리서치 + Confluence Tech Spec 생성 + 로컬 계획 파일 출력 + Jira 티켓 연동.
 ---
 
 # /dev-workflow:doc - 기술 문서 작성
@@ -73,6 +73,22 @@ User -> API -> Service -> DB
 - `integrations.confluence.cloudId` (UUID)
 - `roles.developer.confluence.techSpecSpaceKey`
 
+### 0-1. 상세 수준 선택
+
+```
+Tool: AskUserQuestion
+Question: "리서치 상세 수준을 선택해주세요."
+Options:
+  - "MINIMAL" - 코드베이스 탐색만 + 기본 Tech Spec
+  - "MORE (권장)" - 코드베이스 + 과거 솔루션 학습 리서치
+  - "A LOT" - 전체 리서치 (프레임워크 문서 + 업계 모범 사례 포함)
+```
+
+**`--detail` 옵션으로 직접 지정 가능:**
+- `--detail minimal` → MINIMAL
+- `--detail more` → MORE (기본값, 미지정 시)
+- `--detail alot` → A LOT
+
 ### 1. Jira 티켓 정보 조회
 ```
 Tool: mcp__atlassian__getJiraIssue
@@ -128,42 +144,63 @@ Options:
 
 명확화가 완료되면 다음 단계로 진행합니다.
 
-### 1-1. 코드베이스 탐색 (CRITICAL)
+### 1-0.5. 브레인스토밍 문서 참조 (자동)
+
+동일 티켓의 브레인스토밍 문서가 있으면 자동으로 참조합니다:
+
+```
+Tool: Glob
+Pattern: "{projectPath}/docs/brainstorms/*{ticket_id}*"
+```
+
+발견 시:
+```
+Tool: Read
+file_path: "{brainstorm_doc_path}"
+```
+
+브레인스토밍 문서의 **선택한 접근법**, **성공 기준**, **범위** 정보를 리서치 및 Plan 모드의 컨텍스트로 활용합니다.
+
+### 1-1. Phase R1: 병렬 로컬 리서치 (CRITICAL)
 
 **CRITICAL: Tech Spec 초안 작성 전에 반드시 실제 코드베이스를 탐색하여 정확한 정보를 수집합니다.**
 
-Jira 티켓의 내용만으로는 실제 구현 세부사항을 알 수 없습니다. 잘못된 API 엔드포인트, 데이터 모델, 기존 패턴 등을 문서에 기재하면 Tech Spec의 신뢰성이 떨어집니다.
-
-#### 탐색 대상
-
-Explore 에이전트를 사용하여 다음 항목을 확인합니다:
-
-| 항목 | 탐색 내용 | 예시 |
-|------|----------|------|
-| **API 엔드포인트** | 실제 URL 경로, HTTP 메서드 | `/users/login/` vs `/api/auth/login` |
-| **요청/응답 스키마** | 실제 필드명, 타입, 필수 여부 | `access_token` vs `accessToken` |
-| **인증 미들웨어** | 현재 인증 방식, 사용 중인 라이브러리 | `JWTAuthentication`, `simplejwt` |
-| **데이터 모델** | 관련 테이블, 필드, 관계 | User, Token 모델 구조 |
-| **기존 패턴** | 프로젝트의 코딩 컨벤션, 설정 방식 | settings 구조, Response 포맷 |
-| **관련 테스트** | 기존 테스트 케이스, 테스트 패턴 | pytest fixtures, test 구조 |
-
-#### 탐색 방법
+**ALL 레벨 (MINIMAL, MORE, A LOT) 공통:**
 
 ```
 Tool: Task
-Parameters:
-  - subagent_type: "Explore"
-  - prompt: |
-      {프로젝트 경로}에서 {티켓 주제}와 관련된 코드를 탐색해주세요.
+subagent_type: "oh-my-claudecode:explore"  # repo-research-analyst 역할
+model: sonnet
+prompt: |
+  {projectPath}에서 {티켓 주제}와 관련된 코드를 탐색해주세요.
 
-      찾아야 할 것:
-      1. 관련 API 엔드포인트 경로와 뷰/컨트롤러
-      2. 현재 구현 방식과 사용 중인 라이브러리
-      3. 관련 데이터 모델/스키마
-      4. 설정 파일 (settings, config)
-      5. 기존 테스트 패턴
+  에이전트 역할: repo-research-analyst (../agents/repo-research-analyst.md 참조)
 
-      실제 코드에서 확인한 정확한 정보를 보고해주세요.
+  찾아야 할 것:
+  1. 관련 API 엔드포인트 경로와 뷰/컨트롤러
+  2. 현재 구현 방식과 사용 중인 라이브러리
+  3. 관련 데이터 모델/스키마
+  4. 설정 파일 (settings, config)
+  5. 기존 테스트 패턴
+
+  실제 코드에서 확인한 정확한 정보를 보고해주세요.
+```
+
+**MORE 이상 레벨 (추가 병렬 실행):**
+
+```
+Tool: Task
+subagent_type: "oh-my-claudecode:explore"  # learnings-researcher 역할
+model: haiku
+prompt: |
+  {projectPath}/docs/solutions/ 에서 {티켓 주제}와 관련된 과거 솔루션을 탐색해주세요.
+
+  에이전트 역할: learnings-researcher (../agents/learnings-researcher.md 참조)
+
+  키워드: {scope_keywords}
+  카테고리: {expected_category}
+
+  관련 솔루션의 핵심 학습과 적용 가능한 패턴을 보고해주세요.
 ```
 
 #### 탐색 결과 검증
@@ -174,6 +211,75 @@ Parameters:
 - [ ] 기존 설정 구조를 파악했는가?
 
 **이 단계를 건너뛰면 안 됩니다.** 코드베이스 탐색 없이 작성한 Tech Spec은 실제 구현과 맞지 않아 수정이 필요하게 됩니다.
+
+### 1-2. Phase R2: 조건부 외부 리서치 (A LOT 레벨만)
+
+**A LOT 레벨 선택 시에만 실행합니다. 2개 에이전트를 병렬 실행:**
+
+```
+Tool: Task (2개 병렬)
+```
+
+**A. framework-docs-researcher:**
+```
+subagent_type: "oh-my-claudecode:researcher"  # framework-docs-researcher 역할
+model: sonnet
+prompt: |
+  다음 프로젝트에서 사용하는 프레임워크/라이브러리의 공식 문서를 조사해주세요.
+
+  에이전트 역할: framework-docs-researcher (../agents/framework-docs-researcher.md 참조)
+
+  프레임워크: {detected_framework} {version}
+  주제: {ticket_topic}
+
+  조사해야 할 것:
+  1. 관련 API의 정확한 사양
+  2. 공식 권장 패턴
+  3. 주의사항 및 deprecated API
+```
+
+**B. best-practices-researcher:**
+```
+subagent_type: "oh-my-claudecode:researcher"  # best-practices-researcher 역할
+model: haiku
+prompt: |
+  다음 주제의 업계 모범 사례를 조사해주세요.
+
+  에이전트 역할: best-practices-researcher (../agents/best-practices-researcher.md 참조)
+
+  주제: {ticket_topic}
+  맥락: {project_context}
+
+  조사해야 할 것:
+  1. 업계 표준 접근법
+  2. 보안 가이드라인
+  3. 안티 패턴
+```
+
+### 1-3. Phase R3: 리서치 통합
+
+모든 리서치 에이전트의 결과를 통합합니다:
+
+```markdown
+## 리서치 요약
+
+### 코드베이스 분석 (repo-research-analyst)
+{R1 결과}
+
+### 과거 솔루션 참조 (learnings-researcher) — MORE 이상
+{R1 추가 결과}
+
+### 프레임워크 공식 문서 (framework-docs-researcher) — A LOT만
+{R2-A 결과}
+
+### 업계 모범 사례 (best-practices-researcher) — A LOT만
+{R2-B 결과}
+
+### 브레인스토밍 참조 — 해당 시
+{brainstorm 문서 핵심 내용}
+```
+
+이 통합된 리서치 결과를 Plan 모드의 컨텍스트로 전달합니다.
 
 ### 2. Plan 모드 진입 - Tech Spec 내용 논의
 
@@ -209,7 +315,7 @@ Options:
 
 #### 2-2. Tech Spec 내용 논의
 
-**코드베이스 탐색 결과를 기반으로** Plan 모드에서 다음 사항을 사용자와 논의:
+**리서치 결과를 기반으로** Plan 모드에서 다음 사항을 사용자와 논의:
 
 1. **기술적 설계 범위** (탐색 결과 반영)
    - 어떤 API/시스템이 변경되는가? → **탐색에서 확인한 실제 엔드포인트 사용**
@@ -232,7 +338,7 @@ Options:
 
 논의가 완료되면 Plan 파일에 최종 Tech Spec 내용을 작성하고 `ExitPlanMode`로 사용자 승인을 요청합니다.
 
-### 3. 승인 후 Confluence 페이지 생성
+### 3. 승인 후 Confluence 페이지 생성 + 로컬 계획 파일 출력
 
 **사용자가 Plan을 승인한 후에만 실행합니다.**
 
@@ -269,13 +375,44 @@ Parameters:
 Tool: mcp__atlassian__createConfluencePage
 Parameters:
   - cloudId: "{config.integrations.confluence.cloudId}"
-  - spaceId: "{조회한 spaceId}"  # ⚠️ spaceKey가 아님!
+  - spaceId: "{조회한 spaceId}"  # spaceKey가 아님!
   - title: "[{ticket_id}] {기능명} Tech Spec"
   - contentFormat: "markdown"  # 마크다운 형식 사용
   - body: "{plan_mode에서_확정된_내용}"
 ```
 
 **설정 참조**: `~/.claude/workflow/config.json` → `roles.developer.confluence.*`
+
+#### 3-3. 로컬 계획 파일 출력 (NEW)
+
+**`/work` 커맨드가 소비할 수 있도록 로컬 계획 파일도 생성합니다.**
+
+```bash
+mkdir -p {projectPath}/docs/plans
+```
+
+```
+파일명: docs/plans/{ticket_id}-plan.md
+```
+
+**로컬 계획 파일은 Tech Spec과 동일한 내용이지만 다음이 추가됩니다:**
+
+```markdown
+---
+ticket: {ticket_id}
+confluence_url: {confluence_page_url}
+created: {today}
+detail_level: {MINIMAL | MORE | A LOT}
+---
+
+{Tech Spec 전체 내용}
+
+---
+
+## 리서치 참조 (로컬 전용)
+
+{Phase R1-R3 리서치 통합 결과}
+```
 
 ### 4. Jira 티켓 본문에 문서 링크 추가
 
@@ -287,7 +424,7 @@ Parameters:
   - cloudId: "{config.integrations.jira.cloudId}"
   - issueIdOrKey: "PROJ-123"
   - fields: {
-      "description": "{기존 description 마크다운}\n\n---\n\n## 📄 관련 문서\n\n* [Tech Spec]({confluence_page_url})\n\n---\n\n🤖 Updated with Claude Code"
+      "description": "{기존 description 마크다운}\n\n---\n\n## 관련 문서\n\n* [Tech Spec]({confluence_page_url})\n\n---\n\nUpdated with Claude Code"
     }
 ```
 
@@ -312,16 +449,22 @@ Parameters:
 Tech Spec 생성 완료
 
 문서: [PROJ-123] 회원가입 API Tech Spec
-   URL: https://company.atlassian.net/wiki/...
-   스페이스: lonnie's personal space
+   Confluence: https://company.atlassian.net/wiki/...
+   로컬 계획: docs/plans/PROJ-123-plan.md
+
+리서치 수준: {MINIMAL | MORE | A LOT}
+   코드베이스 분석: 완료
+   과거 솔루션 참조: {완료 / 스킵 (MINIMAL)}
+   프레임워크 문서: {완료 / 스킵 (MINIMAL, MORE)}
+   업계 모범 사례: {완료 / 스킵 (MINIMAL, MORE)}
 
 Jira 연동:
    - PROJ-123 티켓 본문에 문서 링크 추가됨
 
 다음 단계:
-   1. 문서 내용 작성/수정
-   2. 팀 리뷰
-   3. 상태를 "Approved"로 변경
+   1. /dev-workflow:deepen — 특정 영역 심화 (선택)
+   2. /dev-workflow:work docs/plans/PROJ-123-plan.md — 계획 실행
+   3. 또는 /dev-workflow:lfg PROJ-123 — 전체 자율 파이프라인
 ```
 
 ## 템플릿 옵션
@@ -339,7 +482,13 @@ DB 마이그레이션 템플릿 (스키마 변경, 롤백 계획 강조)
 
 ```
 /dev-workflow:doc PROJ-123
-# 기본 Tech Spec 생성 (Plan 모드로 논의 후 승인 시 생성)
+# 기본 Tech Spec 생성 (MORE 레벨, Plan 모드로 논의 후 승인 시 생성)
+
+/dev-workflow:doc PROJ-123 --detail alot
+# 전체 리서치 (프레임워크 문서 + 업계 모범 사례 포함)
+
+/dev-workflow:doc PROJ-123 --detail minimal
+# 최소 리서치 (코드베이스 탐색만)
 
 /dev-workflow:doc PROJ-123 --sdd
 # SDD 방식으로 진행 (spec-kit 사용)
@@ -440,10 +589,14 @@ gh issue create \
 
 ## Attribution
 
-Confluence 문서와 Jira 코멘트에 다음 attribution을 추가합니다:
+Confluence 문서와 Jira 코멘트에 config의 attribution을 추가합니다:
+
+- `~/.claude/workflow/config.json`의 `attribution.text` 값을 사용합니다 (하드코딩 금지)
+- `attribution.enabled`가 `false`인 경우 생략합니다
 
 ```
-Written with Claude Code
+# config.json 예시
+"attribution": {
+  "text": "🤖 Written with Claude Code"
+}
 ```
-
-config.json의 `attribution.enabled`가 `false`인 경우 생략합니다.

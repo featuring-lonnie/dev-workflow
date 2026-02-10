@@ -1,12 +1,12 @@
 ---
-description: PR 리뷰 수행. Slack 리뷰 요청에서 PR 확인 후 로컬 체크아웃하여 코드 리뷰. P5 포맷 + 3자 에이전트 합의 리뷰.
+description: PR 리뷰 수행. 3개 병렬 트랙 (보안 전문 + 성능 전문 + 3자 합의) 리뷰 후 P5 포맷 통합.
 ---
 
 # /dev-workflow:pr-review - PR 리뷰 수행
 
 ## 개요
 
-Slack의 리뷰 요청 메시지에서 PR 링크를 확인하고, 로컬에서 코드를 체크아웃하여 리뷰를 수행합니다.
+Slack의 리뷰 요청 메시지에서 PR 링크를 확인하고, 로컬에서 코드를 체크아웃하여 리뷰를 수행합니다. **3개 병렬 리뷰 트랙**으로 보안, 성능, 코드 품질을 동시에 분석하고 결과를 통합합니다.
 
 ---
 
@@ -129,72 +129,122 @@ git diff origin/develop...HEAD --name-only
 - 변경된 함수/메서드를 호출하는 코드 확인
 - 변경으로 인한 사이드 이펙트 범위 파악
 
-### 7. 코드 리뷰 수행
+### 7. 3개 병렬 리뷰 트랙 실행 (CRITICAL)
 
-#### 기본 체크리스트
+**CRITICAL: 3개 리뷰 트랙을 병렬로 실행하여 보안, 성능, 코드 품질을 동시에 분석합니다.**
 
-| 항목 | 확인 내용 |
-|------|-----------|
-| 기능 | 요구사항 충족 여부 |
-| 코드 품질 | 가독성, 네이밍, 구조 |
-| 보안 | 입력 검증, 인증/인가 |
-| 성능 | 불필요한 연산, N+1 쿼리 |
-| 에러 처리 | 예외 처리, 로깅 |
-
-#### 비즈니스 로직 심층 리뷰 (CRITICAL)
-
-| 카테고리 | 확인 항목 |
-|----------|-----------|
-| **요구사항 일치** | Jira 티켓의 인수 조건과 구현이 정확히 일치하는가? |
-| **엣지케이스** | 빈 값, null, 경계값, 동시성 상황을 처리하는가? |
-| **데이터 정합성** | DB 트랜잭션이 올바른가? 부분 실패 시 롤백되는가? |
-| **도메인 규칙** | 비즈니스 도메인 규칙을 위반하지 않는가? |
-| **기존 로직 호환** | 기존 기능에 영향을 주지 않는가? (regression) |
-| **외부 연동** | 외부 API 실패 시 적절히 처리하는가? |
-| **사용자 시나리오** | 실제 사용자 관점에서 올바르게 동작하는가? |
-
-### 8. 3자 에이전트 합의 리뷰 (Multi-Perspective Review)
-
-**3가지 관점에서 코드를 분석하고 합의:**
-
-| 역할 | 관점 | 주요 체크포인트 |
-|------|------|----------------|
-| **리더급** | 아키텍처, 비즈니스 임팩트 | 설계 방향성, 확장성, 기술 부채, 비즈니스 리스크 |
-| **시니어급** | 구현 품질, 유지보수성 | 코드 구조, 패턴 일관성, 에러 핸들링 |
-| **주니어급** | 가독성, 학습 관점 | 코드 이해도, 문서화, 네이밍, 컨벤션 준수 |
-
-**실행 방법:**
 ```
-1. 각 관점에서 독립적으로 코드 분석
-2. 발견한 이슈들을 P1-P5로 분류
-3. 3자 의견 종합하여 최종 리뷰 작성
+Tool: Task (3개 병렬)
 ```
 
-**리더급 관점 체크:**
-- [ ] 이 변경이 시스템 전체 아키텍처에 미치는 영향은?
-- [ ] 향후 확장성을 고려한 설계인가?
-- [ ] 기술 부채를 늘리는가, 줄이는가?
-- [ ] 비즈니스 요구사항과 정확히 일치하는가?
-- [ ] 장애 발생 시 영향 범위는?
+#### Track 1: Security Sentinel (보안 전문 리뷰)
 
-**시니어급 관점 체크:**
-- [ ] 기존 코드 패턴과 일관성 있는가?
-- [ ] 에러 핸들링이 충분한가?
-- [ ] 성능 이슈가 예상되는가?
-- [ ] 보안 취약점은 없는가?
+에이전트 정의: [security-sentinel](../agents/security-sentinel.md) 참조
 
-**주니어급 관점 체크:**
-- [ ] 코드를 처음 보는 사람이 이해할 수 있는가?
-- [ ] 함수/변수명이 명확한가?
-- [ ] 주석이 필요한 복잡한 로직이 있는가?
-- [ ] 팀 컨벤션을 따르고 있는가?
-- [ ] 비슷한 코드가 다른 곳에 있지 않은가?
+```
+subagent_type: "oh-my-claudecode:security-reviewer"
+model: sonnet
+prompt: |
+  PR #{pr_number}의 보안 리뷰를 수행해주세요.
 
----
+  에이전트 역할: security-sentinel (../agents/security-sentinel.md 참조)
+
+  프로젝트 경로: {projectPath}
+  변경된 파일: {changed_files}
+  Diff: {diff_content}
+
+  OWASP Top 10 기반으로 다음을 검사해주세요:
+  1. 인증/인가 취약점
+  2. 인젝션 (SQL, XSS, Command, SSRF)
+  3. 민감 데이터 노출 (하드코딩 시크릿, 로그 노출)
+  4. 입력 검증
+  5. 설정 보안 (CORS, CSRF, Rate Limiting)
+
+  결과를 P1-P5 등급으로 분류하여 보고해주세요.
+```
+
+#### Track 2: Performance Oracle (성능 전문 리뷰)
+
+에이전트 정의: [performance-oracle](../agents/performance-oracle.md) 참조
+
+```
+subagent_type: "oh-my-claudecode:code-reviewer"
+model: sonnet
+prompt: |
+  PR #{pr_number}의 성능 리뷰를 수행해주세요.
+
+  에이전트 역할: performance-oracle (../agents/performance-oracle.md 참조)
+
+  프로젝트 경로: {projectPath}
+  변경된 파일: {changed_files}
+  Diff: {diff_content}
+
+  다음을 검사해주세요:
+  1. N+1 쿼리
+  2. 메모리 누수 패턴
+  3. 불필요한 연산/호출
+  4. 캐싱 전략
+  5. 알고리즘 복잡도
+  6. DB 인덱스 필요성
+
+  결과를 P1-P5 등급으로 분류하여 보고해주세요.
+```
+
+#### Track 3: 3자 합의 리뷰 (기존 로직 유지)
+
+```
+subagent_type: "oh-my-claudecode:code-reviewer"
+model: sonnet
+prompt: |
+  PR #{pr_number}의 코드 품질 리뷰를 3가지 관점에서 수행해주세요.
+
+  프로젝트 경로: {projectPath}
+  변경된 파일: {changed_files}
+  Diff: {diff_content}
+  Jira 티켓: {ticket_id} - {ticket_title}
+  인수 조건: {acceptance_criteria}
+
+  **3가지 관점에서 독립적으로 분석:**
+
+  1. **리더급 관점**: 아키텍처, 비즈니스 임팩트
+     - 설계 방향성, 확장성, 기술 부채
+     - 비즈니스 요구사항 일치 여부
+     - 장애 발생 시 영향 범위
+
+  2. **시니어급 관점**: 구현 품질, 유지보수성
+     - 코드 구조, 패턴 일관성
+     - 에러 핸들링, 보안
+     - 성능 이슈
+
+  3. **주니어급 관점**: 가독성, 학습 관점
+     - 코드 이해도, 문서화
+     - 네이밍, 컨벤션 준수
+     - 중복 코드
+
+  3자 의견 종합하여 P1-P5로 분류해주세요.
+```
+
+### 8. 리뷰 결과 통합 (CRITICAL)
+
+**3개 트랙의 결과를 통합하고 중복을 제거합니다.**
+
+#### 8-1. 중복 제거 규칙
+
+동일 파일/라인에 대한 발견사항이 여러 트랙에서 보고된 경우:
+- **더 높은 심각도**를 채택
+- **더 구체적인 설명**을 사용
+- **출처 트랙**을 명시
+
+#### 8-2. 보호 아티팩트 규칙
+
+**다음 경로의 파일에 대한 삭제 권고는 자동으로 무시합니다:**
+- `docs/plans/` — 계획 문서 (보호)
+- `docs/solutions/` — 솔루션 문서 (보호)
+- `docs/brainstorms/` — 브레인스토밍 문서 (보호)
 
 ### 9. P5 리뷰 포맷 적용
 
-**우선순위 기반 피드백 분류:**
+**통합된 리뷰 결과를 P5 포맷으로 정리합니다:**
 
 | 등급 | 의미 | 액션 | 예시 |
 |------|------|------|------|
@@ -209,10 +259,19 @@ git diff origin/develop...HEAD --name-only
 ```markdown
 ## PR Review: #{pr_number}
 
+### 리뷰 트랙 요약
+| 트랙 | 판정 | P1 | P2 | P3+ |
+|------|------|----|----|-----|
+| Security Sentinel | {PASS/FAIL} | {n} | {n} | {n} |
+| Performance Oracle | {PASS/WARN/FAIL} | {n} | {n} | {n} |
+| 3자 합의 리뷰 | {PASS/FAIL} | {n} | {n} | {n} |
+
+---
+
 ### P1 - Blocker
 > 반드시 수정 필요
 
-#### 1. {파일명}:{라인}
+#### 1. [{track}] {파일명}:{라인}
 ```{language}
 {코드 스니펫}
 ```
@@ -224,7 +283,7 @@ git diff origin/develop...HEAD --name-only
 ### P2 - Major
 > 머지 전 수정 권장
 
-#### 1. {파일명}:{라인}
+#### 1. [{track}] {파일명}:{라인}
 **문제**: {설명}
 **제안**: {해결 방안}
 
@@ -233,7 +292,7 @@ git diff origin/develop...HEAD --name-only
 ### P3 - Medium
 > 수정 필요 (후속 PR 가능)
 
-- `{파일}:{라인}`: {내용}
+- [{track}] `{파일}:{라인}`: {내용}
 
 ---
 
@@ -268,12 +327,19 @@ git diff origin/develop...HEAD --name-only
 **최종 판정**: {APPROVE / REQUEST_CHANGES / COMMENT}
 **사유**: {판정 이유}
 
-Written with Claude Code
+{config.attribution.text}
 ```
 
----
+### 10. 머지 차단 로직 (강화)
 
-### 10. 리뷰 코멘트 작성
+| 조건 | 판정 | 액션 |
+|------|------|------|
+| P1 1건 이상 | **REQUEST_CHANGES** | 반드시 수정 후 재리뷰 |
+| P1 없음 + P2 3건 이상 | **REQUEST_CHANGES** | 수정 후 재리뷰 권장 |
+| P1 없음 + P2 1-2건 | **COMMENT** | 수정 권장, 머지 가능 |
+| P2 없음 | **APPROVE** | 머지 가능 |
+
+### 11. 리뷰 코멘트 작성
 
 ```bash
 # 리뷰 승인
@@ -283,8 +349,10 @@ LGTM!
 ## 확인 사항
 - [x] 기능 동작 확인
 - [x] 코드 품질 양호
+- [x] 보안 리뷰 통과
+- [x] 성능 리뷰 통과
 
-Written with Claude Code
+{config.attribution.text}
 EOF
 )"
 
@@ -298,7 +366,7 @@ gh pr review {pr_number} --request-changes --body "$(cat <<'EOF'
 ### 2. {파일명}:{라인}
 {설명}
 
-Written with Claude Code
+{config.attribution.text}
 EOF
 )"
 
@@ -308,7 +376,7 @@ gh pr review {pr_number} --comment --body "$(cat <<'EOF'
 
 {코멘트 내용}
 
-Written with Claude Code
+{config.attribution.text}
 EOF
 )"
 ```
@@ -333,6 +401,11 @@ Jira: {ticket_id}
 로컬 경로: {localPath}
 브랜치: {headRefName}
 
+리뷰 트랙:
+  1. Security Sentinel (보안 전문)
+  2. Performance Oracle (성능 전문)
+  3. 3자 합의 리뷰 (코드 품질)
+
 변경된 파일:
 - {file1}
 - {file2}
@@ -347,9 +420,16 @@ PR 리뷰 완료
 PR: #{pr_number} - {title}
 리뷰 결과: {APPROVED / CHANGES_REQUESTED / COMMENTED}
 
+트랙별 결과:
+  Security: {PASS/FAIL} (P1: {n}, P2: {n})
+  Performance: {PASS/WARN/FAIL} (P1: {n}, P2: {n})
+  Code Quality: {PASS/FAIL} (P1: {n}, P2: {n})
+
+통합: P1={n} P2={n} P3={n} P4={n} P5={n}
+
 {리뷰 요약}
 
-Written with Claude Code
+{config.attribution.text}
 ```
 
 ---
@@ -416,10 +496,14 @@ gh issue create \
 
 ## Attribution
 
-모든 리뷰 코멘트, Slack 메시지에 다음 attribution 추가:
+모든 리뷰 코멘트, Slack 메시지에 config의 attribution을 추가합니다:
+
+- `~/.claude/workflow/config.json`의 `attribution.text` 값을 사용합니다 (하드코딩 금지)
+- `attribution.enabled`가 `false`인 경우 생략합니다
 
 ```
-Written with Claude Code
+# config.json 예시
+"attribution": {
+  "text": "🤖 Written with Claude Code"
+}
 ```
-
-config.json의 `attribution.enabled`가 `false`인 경우 생략합니다.
